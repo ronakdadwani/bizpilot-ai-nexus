@@ -1,17 +1,25 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X, Sparkles } from "lucide-react";
+import { Menu, X, Sparkles, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
   const isDashboard = location.pathname.startsWith("/dashboard") || location.pathname.startsWith("/market-research");
 
   const navLinks = [
     { name: "Features", href: "/#features" },
     { name: "Demo", href: "/#demo" },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/");
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -45,23 +53,47 @@ const Navbar = () => {
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-3">
             {isDashboard ? (
-              <Link to="/">
-                <Button variant="ghost" size="sm">
-                  Back to Home
-                </Button>
-              </Link>
+              <>
+                <Link to="/">
+                  <Button variant="ghost" size="sm">
+                    Back to Home
+                  </Button>
+                </Link>
+                {user && (
+                  <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </Button>
+                )}
+              </>
             ) : (
               <>
-                <Link to="/dashboard">
-                  <Button variant="ghost" size="sm">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/dashboard">
-                  <Button variant="hero" size="sm">
-                    Get Started
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link to="/dashboard">
+                      <Button variant="ghost" size="sm">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth">
+                      <Button variant="ghost" size="sm">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth">
+                      <Button variant="hero" size="sm">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -91,16 +123,32 @@ const Navbar = () => {
                 </a>
               ))}
               <div className="flex flex-col gap-2 pt-4 border-t border-border/50">
-                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" size="sm" className="w-full justify-start">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button variant="hero" size="sm" className="w-full">
-                    Get Started
-                  </Button>
-                </Link>
+                {user ? (
+                  <>
+                    <Link to="/dashboard" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        Dashboard
+                      </Button>
+                    </Link>
+                    <Button variant="ghost" size="sm" className="w-full justify-start" onClick={handleSignOut}>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Sign Out
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        Login
+                      </Button>
+                    </Link>
+                    <Link to="/auth" onClick={() => setIsOpen(false)}>
+                      <Button variant="hero" size="sm" className="w-full">
+                        Get Started
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
