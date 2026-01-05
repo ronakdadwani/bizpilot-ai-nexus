@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Brain, Mail, Lock, User, ArrowLeft, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 
@@ -41,17 +41,14 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password: loginPassword,
-    });
+    const result = await api.login(loginEmail, loginPassword);
 
-    if (error) {
+    if (result.error) {
       toast({
         title: "Login failed",
-        description: error.message === "Invalid login credentials" 
+        description: result.error.includes("Invalid") || result.error.includes("credentials")
           ? "Invalid email or password. Please try again." 
-          : error.message,
+          : result.error,
         variant: "destructive",
       });
     } else {
@@ -88,28 +85,17 @@ const Auth = () => {
     }
 
     setIsLoading(true);
-    const redirectUrl = `${window.location.origin}/`;
-    
-    const { error } = await supabase.auth.signUp({
-      email: signupEmail,
-      password: signupPassword,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          full_name: signupName,
-        },
-      },
-    });
+    const result = await api.signup(signupName, signupEmail, signupPassword);
 
-    if (error) {
-      if (error.message.includes("already registered")) {
+    if (result.error) {
+      if (result.error.includes("already") || result.error.includes("exists")) {
         toast({
           title: "Account exists",
           description: "This email is already registered. Please log in instead.",
           variant: "destructive",
         });
       } else {
-        toast({ title: "Signup failed", description: error.message, variant: "destructive" });
+        toast({ title: "Signup failed", description: result.error, variant: "destructive" });
       }
     } else {
       toast({ title: "Account created!", description: "Welcome to BizPilot AI." });
