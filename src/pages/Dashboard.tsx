@@ -7,7 +7,7 @@ import KPICard from "@/components/dashboard/KPICard";
 import RevenueChart from "@/components/dashboard/RevenueChart";
 import RecentAlerts from "@/components/dashboard/RecentAlerts";
 import TopProductsTable from "@/components/dashboard/TopProductsTable";
-import { useAuth } from "@/hooks/useAuth";
+import { useCustomAuth } from "@/hooks/useCustomAuth";
 
 const kpiData = [
   {
@@ -41,7 +41,7 @@ const kpiData = [
 ];
 
 const Dashboard = () => {
-  const { user, loading } = useAuth();
+  const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
