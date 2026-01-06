@@ -123,7 +123,7 @@ class ApiClient {
   }
 
   async signup(name: string, email: string, password: string): Promise<ApiResponse<SignupResponse>> {
-    const result = await this.request<SignupResponse>("/register", {
+    const result = await this.request<SignupResponse>("/signup", {
       method: "POST",
       body: JSON.stringify({ name, email, password }),
     });
