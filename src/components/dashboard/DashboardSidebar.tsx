@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { 
   LayoutDashboard, 
@@ -8,13 +9,19 @@ import {
   Sparkles,
   FileText,
   Users,
-  Bell
+  Bell,
+  Upload,
+  FolderOpen,
+  Brain
 } from "lucide-react";
 
 const navigationItems = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Market Research", href: "/market-research", icon: Search },
   { name: "Analytics", href: "/analytics", icon: TrendingUp },
+  { name: "AI Forecast", href: "/forecast", icon: Brain },
+  { name: "Upload Data", href: "/upload-data", icon: Upload },
+  { name: "Files", href: "/files", icon: FolderOpen },
   { name: "Reports", href: "/reports", icon: FileText },
   { name: "Customers", href: "/customers", icon: Users },
   { name: "Alerts", href: "/alerts", icon: Bell },
@@ -26,9 +33,11 @@ const bottomItems = [
 ];
 
 const DashboardSidebar = () => {
+  const navigate = useNavigate();
+
   return (
     <aside className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 border-r border-border/50 bg-background/80 backdrop-blur-xl flex flex-col">
-      <div className="flex-1 p-4 space-y-1">
+      <div className="flex-1 p-4 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => (
           <NavLink
             key={item.name}
@@ -52,7 +61,10 @@ const DashboardSidebar = () => {
           <p className="text-xs text-muted-foreground mb-3">
             Ask anything about your business data
           </p>
-          <button className="w-full py-2 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-colors">
+          <button 
+            onClick={() => navigate("/ai-chat")}
+            className="w-full py-2 px-3 rounded-lg bg-primary/20 hover:bg-primary/30 text-primary text-sm font-medium transition-colors"
+          >
             Start Chat
           </button>
         </div>
