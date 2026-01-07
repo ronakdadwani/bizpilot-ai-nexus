@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, BarChart3, PieChart, Activity, Download, Calendar, Loader2 } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart, Activity, Download, Calendar, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -17,7 +17,7 @@ import { api, AnalyticsData } from "@/lib/api";
 import { toast } from "sonner";
 
 const Analytics = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("30d");
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
@@ -28,6 +28,11 @@ const Analytics = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -90,7 +95,7 @@ const Analytics = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -116,6 +121,15 @@ const Analytics = () => {
               <Button variant="outline">
                 <Download className="h-4 w-4 mr-2" />
                 Export
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
               </Button>
             </div>
           </div>

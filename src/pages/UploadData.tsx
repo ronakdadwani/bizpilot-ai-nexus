@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -19,7 +19,7 @@ interface UploadedFile {
 }
 
 const UploadData = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
@@ -115,19 +115,35 @@ const UploadData = () => {
     setFiles(prev => prev.filter(f => f.name !== fileName));
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8 max-w-4xl">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Upload Sales Data</h1>
-            <p className="text-muted-foreground">
-              Import your sales data to power AI analytics and forecasts
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Upload Sales Data</h1>
+              <p className="text-muted-foreground">
+                Import your sales data to power AI analytics and forecasts
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
 
           {/* Upload Area */}

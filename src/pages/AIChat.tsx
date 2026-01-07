@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
+import { Send, Bot, User, Sparkles, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -19,7 +19,7 @@ interface Message {
 }
 
 const AIChat = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -57,6 +57,11 @@ const AIChat = () => {
   if (!user) {
     return null;
   }
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   const handleSend = async () => {
     if (!input.trim()) return;
@@ -117,17 +122,28 @@ const AIChat = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8 h-[calc(100vh-4rem)] flex flex-col">
           {/* Header */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
-              <Sparkles className="h-8 w-8 text-primary" />
-              AI Assistant
-            </h1>
-            <p className="text-muted-foreground">
-              Ask questions about your business data
-            </p>
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-3">
+                <Sparkles className="h-8 w-8 text-primary" />
+                AI Assistant
+              </h1>
+              <p className="text-muted-foreground">
+                Ask questions about your business data
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
 
           {/* Chat Area */}

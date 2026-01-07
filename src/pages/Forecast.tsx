@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, Brain, Calendar, Sparkles, Loader2 } from "lucide-react";
+import { TrendingUp, Brain, Calendar, Sparkles, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -17,7 +17,7 @@ import { api, ForecastData } from "@/lib/api";
 import { toast } from "sonner";
 
 const Forecast = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [forecastPeriod, setForecastPeriod] = useState("30d");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -29,6 +29,11 @@ const Forecast = () => {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   useEffect(() => {
     const fetchForecast = async () => {
@@ -76,43 +81,25 @@ const Forecast = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
             <div>
               <h1 className="text-3xl font-bold text-foreground mb-2">AI Forecast</h1>
               <p className="text-muted-foreground">
-                Predictive analytics powered by machine learning
+                AI-powered revenue and trend predictions
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              <Select value={forecastPeriod} onValueChange={setForecastPeriod}>
-                <SelectTrigger className="w-[180px]">
-                  <Calendar className="h-4 w-4 mr-2" />
-                  <SelectValue placeholder="Forecast period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7d">Next 7 days</SelectItem>
-                  <SelectItem value="30d">Next 30 days</SelectItem>
-                  <SelectItem value="90d">Next quarter</SelectItem>
-                  <SelectItem value="1y">Next year</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleGenerateForecast} disabled={isGenerating}>
-                {isGenerating ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Generate Forecast
-                  </>
-                )}
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
 
           {isLoading ? (

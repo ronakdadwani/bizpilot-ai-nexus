@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { HelpCircle, Book, MessageCircle, Mail, ExternalLink, Search } from "lucide-react";
+import { HelpCircle, Book, MessageCircle, Mail, ExternalLink, Search, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/accordion";
 
 const Help = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,6 +35,11 @@ const Help = () => {
   if (!user) {
     return null;
   }
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   const faqs = [
     {
@@ -64,14 +69,25 @@ const Help = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8 max-w-4xl">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Help Center</h1>
-            <p className="text-muted-foreground">
-              Find answers and get support
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Help Center</h1>
+              <p className="text-muted-foreground">
+                Find answers and get support
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
 
           {/* Search */}

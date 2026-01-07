@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Download, Trash2, Eye, FolderOpen, Search, Loader2 } from "lucide-react";
+import { FileText, Download, Trash2, Eye, FolderOpen, Search, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -19,7 +19,7 @@ import { api, FileItem } from "@/lib/api";
 import { toast } from "sonner";
 
 const Files = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [files, setFiles] = useState<FileItem[]>([]);
@@ -67,6 +67,11 @@ const Files = () => {
     return (size / (1024 * 1024)).toFixed(1) + " MB";
   };
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
   const filteredFiles = files.filter(file => 
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -76,7 +81,7 @@ const Files = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -86,10 +91,21 @@ const Files = () => {
                 Manage your uploaded data files
               </p>
             </div>
-            <Button onClick={() => navigate("/upload-data")}>
-              <FolderOpen className="h-4 w-4 mr-2" />
-              Upload New File
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button onClick={() => navigate("/upload-data")}>
+                <FolderOpen className="h-4 w-4 mr-2" />
+                Upload New File
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
+              </Button>
+            </div>
           </div>
 
           {/* Search */}

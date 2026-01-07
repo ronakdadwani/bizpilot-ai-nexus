@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Sparkles, Loader2, Zap, Clock, Brain, ThumbsUp, ThumbsDown, Target, AlertTriangle } from "lucide-react";
+import { Sparkles, Loader2, Zap, Clock, Brain, ThumbsUp, ThumbsDown, Target, AlertTriangle, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -71,7 +71,7 @@ const mockSWOT: SWOTData = {
 };
 
 const MarketResearch = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [businessIdea, setBusinessIdea] = useState("");
   const [industry, setIndustry] = useState("");
@@ -97,6 +97,11 @@ const MarketResearch = () => {
   if (!user) {
     return null;
   }
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
 
   const handleGenerate = async () => {
     if (!businessIdea.trim() || !industry.trim()) return;
@@ -142,14 +147,25 @@ const MarketResearch = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8 max-w-6xl">
           {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Market Research</h1>
-            <p className="text-muted-foreground">
-              AI-powered intelligence reports for your business ideas
-            </p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Market Research</h1>
+              <p className="text-muted-foreground">
+                AI-powered intelligence reports for your business ideas
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleLogout}
+              className="flex items-center gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Logout
+            </Button>
           </div>
 
           {/* Input Form */}

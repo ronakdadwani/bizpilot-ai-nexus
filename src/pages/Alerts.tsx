@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, AlertTriangle, TrendingDown, TrendingUp, CheckCircle, X, Loader2 } from "lucide-react";
+import { Bell, AlertTriangle, TrendingDown, TrendingUp, CheckCircle, X, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -12,7 +12,7 @@ import { api, AlertItem } from "@/lib/api";
 import { toast } from "sonner";
 
 const Alerts = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -90,6 +90,11 @@ const Alerts = () => {
 
   const unreadCount = alerts.filter(a => !a.read).length;
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
   const renderAlertCard = (alert: AlertItem) => (
     <Card 
       key={alert.id} 
@@ -131,7 +136,7 @@ const Alerts = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -141,12 +146,23 @@ const Alerts = () => {
                 Stay updated on important business events
               </p>
             </div>
-            {unreadCount > 0 && (
-              <Button variant="outline" onClick={() => setAlerts(prev => prev.map(a => ({ ...a, read: true })))}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                Mark All as Read
+            <div className="flex items-center gap-3">
+              {unreadCount > 0 && (
+                <Button variant="outline" onClick={() => setAlerts(prev => prev.map(a => ({ ...a, read: true })))}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Mark All as Read
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
               </Button>
-            )}
+            </div>
           </div>
 
           {/* Stats */}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Filter, Plus, Mail, Phone, MoreHorizontal, Loader2 } from "lucide-react";
+import { Search, Filter, Plus, Mail, Phone, MoreHorizontal, Loader2, LogOut } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -27,7 +27,7 @@ import { api, CustomerData, Customer } from "@/lib/api";
 import { toast } from "sonner";
 
 const Customers = () => {
-  const { user, loading } = useCustomAuth();
+  const { user, loading, signOut } = useCustomAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
@@ -71,6 +71,11 @@ const Customers = () => {
   const customers = customerData?.customers || [];
   const stats = customerData?.stats || {};
 
+  const handleLogout = async () => {
+    await signOut();
+    navigate("/auth");
+  };
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
@@ -100,7 +105,7 @@ const Customers = () => {
       <Navbar />
       <DashboardSidebar />
 
-      <main className="pl-64 pt-16">
+      <main className="pl-64 pt-16 page-transition">
         <div className="p-8">
           {/* Header */}
           <div className="flex items-center justify-between mb-8">
@@ -118,6 +123,15 @@ const Customers = () => {
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Customer
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleLogout}
+                className="flex items-center gap-2"
+              >
+                <LogOut className="w-4 h-4" />
+                Logout
               </Button>
             </div>
           </div>
