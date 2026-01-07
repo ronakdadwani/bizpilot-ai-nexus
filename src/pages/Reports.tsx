@@ -1,30 +1,43 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Download, Calendar, Filter, Plus } from "lucide-react";
+import { FileText, Download, Calendar, Filter, Plus, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-interface Report {
-  id: string;
-  title: string;
-  type: string;
-  date: string;
-  status: "ready" | "generating" | "scheduled";
-}
+import { api, Report } from "@/lib/api";
+import { toast } from "sonner";
 
 const Reports = () => {
   const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchReports = async () => {
+      setIsLoading(true);
+      const result = await api.getReports();
+      if (result.data) {
+        setReports(result.data);
+      } else if (result.error) {
+        toast.error("Failed to load reports: " + result.error);
+      }
+      setIsLoading(false);
+    };
+
+    if (user) {
+      fetchReports();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -38,15 +51,7 @@ const Reports = () => {
     return null;
   }
 
-  const reports: Report[] = [
-    { id: "1", title: "Monthly Sales Report", type: "Sales", date: "Jan 2026", status: "ready" },
-    { id: "2", title: "Customer Acquisition Analysis", type: "Marketing", date: "Jan 2026", status: "ready" },
-    { id: "3", title: "Inventory Status Report", type: "Operations", date: "Jan 2026", status: "generating" },
-    { id: "4", title: "Financial Summary Q4", type: "Finance", date: "Dec 2025", status: "ready" },
-    { id: "5", title: "Weekly Performance Report", type: "General", date: "Jan 5, 2026", status: "scheduled" },
-  ];
-
-  const getStatusBadge = (status: Report["status"]) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "ready":
         return <Badge className="bg-green-500/20 text-green-500 hover:bg-green-500/30">Ready</Badge>;
@@ -54,6 +59,8 @@ const Reports = () => {
         return <Badge className="bg-yellow-500/20 text-yellow-500 hover:bg-yellow-500/30">Generating</Badge>;
       case "scheduled":
         return <Badge className="bg-blue-500/20 text-blue-500 hover:bg-blue-500/30">Scheduled</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
@@ -84,39 +91,50 @@ const Reports = () => {
             </div>
           </div>
 
-          {/* Reports Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {reports.map((report) => (
-              <Card key={report.id} className="glass-card hover:border-primary/50 transition-colors">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="p-2 rounded-lg bg-primary/10">
-                      <FileText className="h-5 w-5 text-primary" />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : reports.length > 0 ? (
+            /* Reports Grid */
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {reports.map((report) => (
+                <Card key={report.id} className="glass-card hover:border-primary/50 transition-colors">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="p-2 rounded-lg bg-primary/10">
+                        <FileText className="h-5 w-5 text-primary" />
+                      </div>
+                      {getStatusBadge(report.status)}
                     </div>
-                    {getStatusBadge(report.status)}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <h3 className="font-semibold text-foreground mb-1">{report.title}</h3>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                    <span className="px-2 py-0.5 rounded bg-secondary">{report.type}</span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {report.date}
-                    </span>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    className="w-full" 
-                    disabled={report.status !== "ready"}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    {report.status === "ready" ? "Download" : "Not Ready"}
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardHeader>
+                  <CardContent>
+                    <h3 className="font-semibold text-foreground mb-1">{report.title}</h3>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                      <span className="px-2 py-0.5 rounded bg-secondary">{report.type}</span>
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {report.date}
+                      </span>
+                    </div>
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      disabled={report.status !== "ready"}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      {report.status === "ready" ? "Download" : "Not Ready"}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-20">
+              <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No reports available</p>
+            </div>
+          )}
         </div>
       </main>
     </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Users, Search, Filter, Plus, Mail, Phone, MoreHorizontal } from "lucide-react";
+import { Search, Filter, Plus, Mail, Phone, MoreHorizontal, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -23,27 +23,38 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-interface Customer {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  status: "active" | "inactive" | "pending";
-  totalSpent: string;
-  lastOrder: string;
-}
+import { api, CustomerData, Customer } from "@/lib/api";
+import { toast } from "sonner";
 
 const Customers = () => {
   const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [customerData, setCustomerData] = useState<CustomerData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchCustomers = async () => {
+      setIsLoading(true);
+      const result = await api.getCustomers();
+      if (result.data) {
+        setCustomerData(result.data);
+      } else if (result.error) {
+        toast.error("Failed to load customers: " + result.error);
+      }
+      setIsLoading(false);
+    };
+
+    if (user) {
+      fetchCustomers();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -57,15 +68,10 @@ const Customers = () => {
     return null;
   }
 
-  const customers: Customer[] = [
-    { id: "1", name: "John Smith", email: "john@example.com", phone: "+1 234-567-8900", status: "active", totalSpent: "$12,450", lastOrder: "Jan 5, 2026" },
-    { id: "2", name: "Sarah Johnson", email: "sarah@example.com", phone: "+1 234-567-8901", status: "active", totalSpent: "$8,920", lastOrder: "Jan 4, 2026" },
-    { id: "3", name: "Mike Brown", email: "mike@example.com", phone: "+1 234-567-8902", status: "inactive", totalSpent: "$5,670", lastOrder: "Dec 15, 2025" },
-    { id: "4", name: "Emily Davis", email: "emily@example.com", phone: "+1 234-567-8903", status: "pending", totalSpent: "$2,340", lastOrder: "Jan 2, 2026" },
-    { id: "5", name: "David Wilson", email: "david@example.com", phone: "+1 234-567-8904", status: "active", totalSpent: "$15,780", lastOrder: "Jan 6, 2026" },
-  ];
+  const customers = customerData?.customers || [];
+  const stats = customerData?.stats || {};
 
-  const getStatusBadge = (status: Customer["status"]) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case "active":
         return <Badge className="bg-green-500/20 text-green-500">Active</Badge>;
@@ -73,13 +79,21 @@ const Customers = () => {
         return <Badge className="bg-gray-500/20 text-gray-500">Inactive</Badge>;
       case "pending":
         return <Badge className="bg-yellow-500/20 text-yellow-500">Pending</Badge>;
+      default:
+        return <Badge>{status}</Badge>;
     }
   };
 
-  const filteredCustomers = customers.filter(customer =>
+  const filteredCustomers = customers.filter((customer: Customer) =>
     customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     customer.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const formatCurrency = (value: string | number | undefined) => {
+    if (!value) return "$0";
+    if (typeof value === "string") return value;
+    return `$${value.toLocaleString()}`;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,25 +126,33 @@ const Customers = () => {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <Card className="glass-card">
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-foreground">12,847</div>
+                <div className="text-2xl font-bold text-foreground">
+                  {stats.total?.toLocaleString() || "0"}
+                </div>
                 <p className="text-sm text-muted-foreground">Total Customers</p>
               </CardContent>
             </Card>
             <Card className="glass-card">
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-500">10,234</div>
+                <div className="text-2xl font-bold text-green-500">
+                  {stats.active?.toLocaleString() || "0"}
+                </div>
                 <p className="text-sm text-muted-foreground">Active</p>
               </CardContent>
             </Card>
             <Card className="glass-card">
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-yellow-500">1,847</div>
+                <div className="text-2xl font-bold text-yellow-500">
+                  {stats.newThisMonth?.toLocaleString() || "0"}
+                </div>
                 <p className="text-sm text-muted-foreground">New This Month</p>
               </CardContent>
             </Card>
             <Card className="glass-card">
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-primary">$89.50</div>
+                <div className="text-2xl font-bold text-primary">
+                  {formatCurrency(stats.avgOrderValue)}
+                </div>
                 <p className="text-sm text-muted-foreground">Avg. Order Value</p>
               </CardContent>
             </Card>
@@ -153,63 +175,79 @@ const Customers = () => {
               </div>
             </CardHeader>
             <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Customer</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Total Spent</TableHead>
-                    <TableHead>Last Order</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCustomers.map((customer) => (
-                    <TableRow key={customer.id}>
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              {customer.name.split(" ").map(n => n[0]).join("")}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="font-medium">{customer.name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3 text-muted-foreground" />
-                            {customer.email}
-                          </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3" />
-                            {customer.phone}
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(customer.status)}</TableCell>
-                      <TableCell className="font-medium">{customer.totalSpent}</TableCell>
-                      <TableCell className="text-muted-foreground">{customer.lastOrder}</TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit</DropdownMenuItem>
-                            <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredCustomers.length > 0 ? (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Customer</TableHead>
+                      <TableHead>Contact</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Total Spent</TableHead>
+                      <TableHead>Last Order</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredCustomers.map((customer: Customer) => (
+                      <TableRow key={customer.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarFallback className="bg-primary/10 text-primary">
+                                {customer.name.split(" ").map(n => n[0]).join("")}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{customer.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Mail className="h-3 w-3 text-muted-foreground" />
+                              {customer.email}
+                            </div>
+                            {customer.phone && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <Phone className="h-3 w-3" />
+                                {customer.phone}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(customer.status)}</TableCell>
+                        <TableCell className="font-medium">
+                          {formatCurrency(customer.totalSpent)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {customer.lastOrder || "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>View Details</DropdownMenuItem>
+                              <DropdownMenuItem>Edit</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No customers found</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

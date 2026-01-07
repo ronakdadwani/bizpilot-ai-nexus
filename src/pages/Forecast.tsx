@@ -13,18 +13,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { api, ForecastData } from "@/lib/api";
+import { toast } from "sonner";
 
 const Forecast = () => {
   const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
   const [forecastPeriod, setForecastPeriod] = useState("30d");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [forecastData, setForecastData] = useState<ForecastData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchForecast = async () => {
+      setIsLoading(true);
+      const result = await api.getForecast(forecastPeriod);
+      if (result.data) {
+        setForecastData(result.data);
+      } else if (result.error) {
+        toast.error("Failed to load forecast: " + result.error);
+      }
+      setIsLoading(false);
+    };
+
+    if (user) {
+      fetchForecast();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -40,8 +61,13 @@ const Forecast = () => {
 
   const handleGenerateForecast = async () => {
     setIsGenerating(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const result = await api.getForecast(forecastPeriod);
+    if (result.data) {
+      setForecastData(result.data);
+      toast.success("Forecast generated successfully!");
+    } else if (result.error) {
+      toast.error("Failed to generate forecast: " + result.error);
+    }
     setIsGenerating(false);
   };
 
@@ -89,71 +115,93 @@ const Forecast = () => {
             </div>
           </div>
 
-          {/* Forecast Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                  Revenue Prediction
-                </CardTitle>
-                <CardDescription>Expected revenue for next period</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">$156,000</div>
-                <p className="text-sm text-green-500 mt-1">+18% projected growth</p>
-              </CardContent>
-            </Card>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              {/* Forecast Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUp className="h-5 w-5 text-primary" />
+                      Revenue Prediction
+                    </CardTitle>
+                    <CardDescription>Expected revenue for next period</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">
+                      {forecastData?.revenuePrediction 
+                        ? `$${forecastData.revenuePrediction.toLocaleString()}` 
+                        : "N/A"}
+                    </div>
+                    <p className="text-sm text-green-500 mt-1">+18% projected growth</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-primary" />
-                  Confidence Score
-                </CardTitle>
-                <CardDescription>Model prediction accuracy</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">87.5%</div>
-                <p className="text-sm text-muted-foreground mt-1">Based on historical data</p>
-              </CardContent>
-            </Card>
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="h-5 w-5 text-primary" />
+                      Confidence Score
+                    </CardTitle>
+                    <CardDescription>Model prediction accuracy</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">
+                      {forecastData?.confidenceScore 
+                        ? `${forecastData.confidenceScore}%` 
+                        : "N/A"}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">Based on historical data</p>
+                  </CardContent>
+                </Card>
 
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Peak Period
-                </CardTitle>
-                <CardDescription>Highest expected activity</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-foreground">Week 3</div>
-                <p className="text-sm text-muted-foreground mt-1">Jan 15-21, 2026</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Forecast Chart Placeholder */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Forecast Visualization</CardTitle>
-              <CardDescription>
-                AI-powered predictions based on your sales data
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[400px] flex items-center justify-center">
-              <div className="text-center">
-                <Brain className="h-16 w-16 text-primary/30 mx-auto mb-4" />
-                <p className="text-muted-foreground">
-                  Upload sales data to generate AI-powered forecasts
-                </p>
-                <Button variant="outline" className="mt-4" onClick={() => navigate("/upload-data")}>
-                  Upload Sales Data
-                </Button>
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-primary" />
+                      Peak Period
+                    </CardTitle>
+                    <CardDescription>Highest expected activity</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-3xl font-bold text-foreground">
+                      {forecastData?.peakPeriod || "N/A"}
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-1">Predicted high activity</p>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Forecast Chart Placeholder */}
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle>Forecast Visualization</CardTitle>
+                  <CardDescription>
+                    AI-powered predictions based on your sales data
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="h-[400px] flex items-center justify-center">
+                  {forecastData?.forecastData ? (
+                    <p className="text-muted-foreground">Forecast data loaded from backend</p>
+                  ) : (
+                    <div className="text-center">
+                      <Brain className="h-16 w-16 text-primary/30 mx-auto mb-4" />
+                      <p className="text-muted-foreground">
+                        Upload sales data to generate AI-powered forecasts
+                      </p>
+                      <Button variant="outline" className="mt-4" onClick={() => navigate("/upload-data")}>
+                        Upload Sales Data
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </>
+          )}
         </div>
       </main>
     </div>
