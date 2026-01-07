@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { TrendingUp, BarChart3, PieChart, Activity, Download, Calendar } from "lucide-react";
+import { TrendingUp, BarChart3, PieChart, Activity, Download, Calendar, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -13,17 +13,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { api, AnalyticsData } from "@/lib/api";
+import { toast } from "sonner";
 
 const Analytics = () => {
   const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState("30d");
+  const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setIsLoading(true);
+      const result = await api.getAnalytics();
+      if (result.data) {
+        setAnalyticsData(result.data);
+      } else if (result.error) {
+        toast.error("Failed to load analytics: " + result.error);
+      }
+      setIsLoading(false);
+    };
+
+    if (user) {
+      fetchAnalytics();
+    }
+  }, [user, timeRange]);
 
   if (loading) {
     return (
@@ -38,10 +59,30 @@ const Analytics = () => {
   }
 
   const analyticsCards = [
-    { title: "Total Sales", value: "$124,500", change: "+12.5%", icon: TrendingUp },
-    { title: "Conversion Rate", value: "3.24%", change: "+0.8%", icon: Activity },
-    { title: "Avg. Order Value", value: "$89.50", change: "+5.2%", icon: BarChart3 },
-    { title: "Customer Retention", value: "68.4%", change: "+2.1%", icon: PieChart },
+    { 
+      title: "Total Sales", 
+      value: analyticsData?.totalSales ? `$${analyticsData.totalSales.toLocaleString()}` : "$0", 
+      change: "+12.5%", 
+      icon: TrendingUp 
+    },
+    { 
+      title: "Conversion Rate", 
+      value: analyticsData?.conversionRate ? `${analyticsData.conversionRate}%` : "0%", 
+      change: "+0.8%", 
+      icon: Activity 
+    },
+    { 
+      title: "Avg. Order Value", 
+      value: analyticsData?.avgOrderValue ? `$${analyticsData.avgOrderValue.toFixed(2)}` : "$0", 
+      change: "+5.2%", 
+      icon: BarChart3 
+    },
+    { 
+      title: "Customer Retention", 
+      value: analyticsData?.customerRetention ? `${analyticsData.customerRetention}%` : "0%", 
+      change: "+2.1%", 
+      icon: PieChart 
+    },
   ];
 
   return (
@@ -79,43 +120,59 @@ const Analytics = () => {
             </div>
           </div>
 
-          {/* Analytics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {analyticsCards.map((card, index) => (
-              <Card key={index} className="glass-card">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {card.title}
-                  </CardTitle>
-                  <card.icon className="h-4 w-4 text-primary" />
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-foreground">{card.value}</div>
-                  <p className="text-xs text-green-500 mt-1">{card.change} from last period</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <>
+              {/* Analytics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {analyticsCards.map((card, index) => (
+                  <Card key={index} className="glass-card">
+                    <CardHeader className="flex flex-row items-center justify-between pb-2">
+                      <CardTitle className="text-sm font-medium text-muted-foreground">
+                        {card.title}
+                      </CardTitle>
+                      <card.icon className="h-4 w-4 text-primary" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold text-foreground">{card.value}</div>
+                      <p className="text-xs text-green-500 mt-1">{card.change} from last period</p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
 
-          {/* Placeholder Charts */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Sales Trend</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">Chart will display sales data from your backend</p>
-              </CardContent>
-            </Card>
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle>Category Breakdown</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px] flex items-center justify-center">
-                <p className="text-muted-foreground">Chart will display category analytics</p>
-              </CardContent>
-            </Card>
-          </div>
+              {/* Placeholder Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Sales Trend</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px] flex items-center justify-center">
+                    {analyticsData?.salesTrend ? (
+                      <p className="text-muted-foreground">Sales data loaded from backend</p>
+                    ) : (
+                      <p className="text-muted-foreground">No sales data available</p>
+                    )}
+                  </CardContent>
+                </Card>
+                <Card className="glass-card">
+                  <CardHeader>
+                    <CardTitle>Category Breakdown</CardTitle>
+                  </CardHeader>
+                  <CardContent className="h-[300px] flex items-center justify-center">
+                    {analyticsData?.categoryBreakdown ? (
+                      <p className="text-muted-foreground">Category data loaded from backend</p>
+                    ) : (
+                      <p className="text-muted-foreground">No category data available</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
         </div>
       </main>
     </div>

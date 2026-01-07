@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, FileText, CheckCircle, XCircle, Loader2, File, Trash2 } from "lucide-react";
+import { Upload, FileText, CheckCircle, XCircle, Loader2, Trash2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -15,6 +15,7 @@ interface UploadedFile {
   size: number;
   status: "uploading" | "success" | "error";
   progress: number;
+  error?: string;
 }
 
 const UploadData = () => {
@@ -82,24 +83,31 @@ const UploadData = () => {
       
       setFiles(prev => [...prev, newFile]);
 
-      // Simulate upload progress
-      for (let progress = 0; progress <= 100; progress += 20) {
-        await new Promise(resolve => setTimeout(resolve, 200));
-        setFiles(prev => 
-          prev.map(f => 
-            f.name === file.name ? { ...f, progress } : f
-          )
-        );
-      }
-
-      // Mark as complete
+      // Update progress to show activity
       setFiles(prev => 
         prev.map(f => 
-          f.name === file.name ? { ...f, status: "success", progress: 100 } : f
+          f.name === file.name ? { ...f, progress: 50 } : f
         )
       );
-      
-      toast.success(`${file.name} uploaded successfully`);
+
+      // Upload to actual API
+      const result = await api.uploadSalesData(file);
+
+      if (result.data) {
+        setFiles(prev => 
+          prev.map(f => 
+            f.name === file.name ? { ...f, status: "success", progress: 100 } : f
+          )
+        );
+        toast.success(`${file.name} uploaded successfully`);
+      } else {
+        setFiles(prev => 
+          prev.map(f => 
+            f.name === file.name ? { ...f, status: "error", progress: 100, error: result.error } : f
+          )
+        );
+        toast.error(`Failed to upload ${file.name}: ${result.error}`);
+      }
     }
   };
 
@@ -186,6 +194,9 @@ const UploadData = () => {
                       <p className="text-sm text-muted-foreground">{formatFileSize(file.size)}</p>
                       {file.status === "uploading" && (
                         <Progress value={file.progress} className="mt-2 h-1" />
+                      )}
+                      {file.status === "error" && file.error && (
+                        <p className="text-sm text-red-500 mt-1">{file.error}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2">

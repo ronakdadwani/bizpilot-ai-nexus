@@ -162,7 +162,161 @@ class ApiClient {
   async delete<T>(endpoint: string): Promise<ApiResponse<T>> {
     return this.request<T>(endpoint, { method: "DELETE" });
   }
+
+  // File upload method
+  async uploadFile(endpoint: string, file: File): Promise<ApiResponse<unknown>> {
+    const token = this.getToken();
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const headers: HeadersInit = {};
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${this.baseUrl}${endpoint}`, {
+        method: "POST",
+        headers,
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return {
+          error: data.message || data.error || `Request failed with status ${response.status}`,
+        };
+      }
+
+      return { data };
+    } catch (error) {
+      return {
+        error: error instanceof Error ? error.message : "Network error occurred",
+      };
+    }
+  }
+
+  // Specific API methods
+  async getAnalytics(): Promise<ApiResponse<AnalyticsData>> {
+    return this.get<AnalyticsData>("/analytics");
+  }
+
+  async getForecast(period?: string): Promise<ApiResponse<ForecastData>> {
+    const endpoint = period ? `/forecast?period=${period}` : "/forecast";
+    return this.get<ForecastData>(endpoint);
+  }
+
+  async uploadSalesData(file: File): Promise<ApiResponse<UploadResponse>> {
+    return this.uploadFile("/upload-sales-data", file) as Promise<ApiResponse<UploadResponse>>;
+  }
+
+  async getFiles(): Promise<ApiResponse<FileItem[]>> {
+    return this.get<FileItem[]>("/files");
+  }
+
+  async sendChatMessage(message: string): Promise<ApiResponse<ChatResponse>> {
+    return this.post<ChatResponse>("/llm", { message });
+  }
+
+  async getReports(): Promise<ApiResponse<Report[]>> {
+    return this.get<Report[]>("/reports");
+  }
+
+  async getCustomers(): Promise<ApiResponse<CustomerData>> {
+    return this.get<CustomerData>("/customers");
+  }
+
+  async getAlerts(): Promise<ApiResponse<AlertItem[]>> {
+    return this.get<AlertItem[]>("/alerts");
+  }
+
+  async getMe(): Promise<ApiResponse<User>> {
+    return this.get<User>("/me");
+  }
+}
+
+// Types for API responses
+interface AnalyticsData {
+  totalSales?: number;
+  conversionRate?: number;
+  avgOrderValue?: number;
+  customerRetention?: number;
+  salesTrend?: Array<{ date: string; value: number }>;
+  categoryBreakdown?: Array<{ name: string; value: number }>;
+  [key: string]: unknown;
+}
+
+interface ForecastData {
+  revenuePrediction?: number;
+  confidenceScore?: number;
+  peakPeriod?: string;
+  forecastData?: Array<{ date: string; predicted: number; actual?: number }>;
+  [key: string]: unknown;
+}
+
+interface UploadResponse {
+  success: boolean;
+  message?: string;
+  fileId?: string;
+  [key: string]: unknown;
+}
+
+interface FileItem {
+  id: string;
+  name: string;
+  type: string;
+  size: string | number;
+  uploadedAt: string;
+  [key: string]: unknown;
+}
+
+interface ChatResponse {
+  response?: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
+interface Report {
+  id: string;
+  title: string;
+  type: string;
+  date: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+interface CustomerData {
+  customers?: Customer[];
+  stats?: {
+    total?: number;
+    active?: number;
+    newThisMonth?: number;
+    avgOrderValue?: number;
+  };
+  [key: string]: unknown;
+}
+
+interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  status: string;
+  totalSpent?: string | number;
+  lastOrder?: string;
+  [key: string]: unknown;
+}
+
+interface AlertItem {
+  id: string;
+  type: string;
+  title: string;
+  message: string;
+  timestamp: string;
+  read?: boolean;
+  [key: string]: unknown;
 }
 
 export const api = new ApiClient(API_BASE_URL);
-export type { User, LoginResponse, SignupResponse, ApiResponse };
+export type { User, LoginResponse, SignupResponse, ApiResponse, AnalyticsData, ForecastData, FileItem, ChatResponse, Report, CustomerData, Customer, AlertItem };

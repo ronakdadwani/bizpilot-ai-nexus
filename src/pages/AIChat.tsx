@@ -4,10 +4,12 @@ import { Send, Bot, User, Sparkles, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
 
 interface Message {
   id: string;
@@ -67,20 +69,32 @@ const AIChat = () => {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const userInput = input;
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Call actual API
+    const result = await api.sendChatMessage(userInput);
 
-    const aiMessage: Message = {
-      id: (Date.now() + 1).toString(),
-      role: "assistant",
-      content: "Thank you for your question! Based on your data, I can see some interesting patterns. Would you like me to provide a detailed analysis or focus on specific metrics?",
-      timestamp: new Date(),
-    };
+    if (result.data) {
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: result.data.response || result.data.message || "I received your message but couldn't process a response.",
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, aiMessage]);
+    } else {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: `Sorry, I encountered an error: ${result.error}. Please try again.`,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      toast.error("Failed to get AI response");
+    }
 
-    setMessages(prev => [...prev, aiMessage]);
     setIsTyping(false);
   };
 

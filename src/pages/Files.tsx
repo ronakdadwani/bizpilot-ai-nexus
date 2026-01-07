@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Download, Trash2, Eye, FolderOpen, Search } from "lucide-react";
+import { FileText, Download, Trash2, Eye, FolderOpen, Search, Loader2 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import DashboardSidebar from "@/components/dashboard/DashboardSidebar";
 import { useCustomAuth } from "@/hooks/useCustomAuth";
@@ -15,25 +15,38 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-
-interface FileItem {
-  id: string;
-  name: string;
-  type: string;
-  size: string;
-  uploadedAt: string;
-}
+import { api, FileItem } from "@/lib/api";
+import { toast } from "sonner";
 
 const Files = () => {
   const { user, loading } = useCustomAuth();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate("/auth");
     }
   }, [user, loading, navigate]);
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      setIsLoading(true);
+      const result = await api.getFiles();
+      if (result.data) {
+        setFiles(result.data);
+      } else if (result.error) {
+        toast.error("Failed to load files: " + result.error);
+      }
+      setIsLoading(false);
+    };
+
+    if (user) {
+      fetchFiles();
+    }
+  }, [user]);
 
   if (loading) {
     return (
@@ -47,13 +60,12 @@ const Files = () => {
     return null;
   }
 
-  // Mock data - will be replaced with API data
-  const files: FileItem[] = [
-    { id: "1", name: "sales_q4_2025.csv", type: "CSV", size: "2.4 MB", uploadedAt: "Jan 5, 2026" },
-    { id: "2", name: "inventory_report.xlsx", type: "Excel", size: "1.8 MB", uploadedAt: "Jan 4, 2026" },
-    { id: "3", name: "customer_data.csv", type: "CSV", size: "5.2 MB", uploadedAt: "Jan 3, 2026" },
-    { id: "4", name: "revenue_analysis.xlsx", type: "Excel", size: "890 KB", uploadedAt: "Jan 2, 2026" },
-  ];
+  const formatFileSize = (size: string | number) => {
+    if (typeof size === "string") return size;
+    if (size < 1024) return size + " B";
+    if (size < 1024 * 1024) return (size / 1024).toFixed(1) + " KB";
+    return (size / (1024 * 1024)).toFixed(1) + " MB";
+  };
 
   const filteredFiles = files.filter(file => 
     file.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -101,7 +113,11 @@ const Files = () => {
               <CardTitle>Your Files</CardTitle>
             </CardHeader>
             <CardContent>
-              {filteredFiles.length > 0 ? (
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : filteredFiles.length > 0 ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -122,7 +138,7 @@ const Files = () => {
                           </div>
                         </TableCell>
                         <TableCell>{file.type}</TableCell>
-                        <TableCell>{file.size}</TableCell>
+                        <TableCell>{formatFileSize(file.size)}</TableCell>
                         <TableCell>{file.uploadedAt}</TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
