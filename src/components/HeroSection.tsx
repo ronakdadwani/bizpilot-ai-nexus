@@ -1,7 +1,12 @@
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Play, Send, TrendingUp } from "lucide-react";
+import DemoModal from "@/components/DemoModal";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+  const [demoOpen, setDemoOpen] = useState(false);
   return (
     <section className="relative min-h-screen pt-24 pb-16 overflow-hidden">
       {/* Background Gradient Orbs */}
@@ -36,11 +41,21 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start animate-fade-in-up [animation-delay:200ms]">
-              <Button variant="hero" size="lg" className="group">
+              <Button 
+                variant="hero" 
+                size="lg" 
+                className="group"
+                onClick={() => navigate("/auth")}
+              >
                 Start for Free
                 <span className="group-hover:translate-x-1 transition-transform">→</span>
               </Button>
-              <Button variant="heroOutline" size="lg" className="group">
+              <Button 
+                variant="heroOutline" 
+                size="lg" 
+                className="group"
+                onClick={() => setDemoOpen(true)}
+              >
                 <Play className="h-4 w-4 mr-1 group-hover:scale-110 transition-transform" />
                 Watch Demo
               </Button>
@@ -131,6 +146,8 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
+
+      <DemoModal open={demoOpen} onOpenChange={setDemoOpen} />
     </section>
   );
 };

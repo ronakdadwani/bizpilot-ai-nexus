@@ -1,6 +1,9 @@
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
 const CTASection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="py-24">
       <div className="container mx-auto px-4">
@@ -19,7 +22,7 @@ const CTASection = () => {
               Join the AI-powered business revolution
             </p>
 
-            <Button variant="cta" size="xl">
+            <Button variant="cta" size="xl" onClick={() => navigate("/auth")}>
               Start Free Trial
             </Button>
           </div>
