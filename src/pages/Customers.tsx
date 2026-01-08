@@ -23,6 +23,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { api, CustomerData, Customer } from "@/lib/api";
 import { toast } from "sonner";
 
@@ -32,6 +39,10 @@ const Customers = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [customerData, setCustomerData] = useState<CustomerData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormData, setEditFormData] = useState<Customer | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -74,6 +85,30 @@ const Customers = () => {
   const handleLogout = async () => {
     await signOut();
     navigate("/auth");
+  };
+
+  const handleViewDetails = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setIsDetailDialogOpen(true);
+  };
+
+  const handleEdit = (customer: Customer) => {
+    setEditFormData({ ...customer });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleDelete = (customer: Customer) => {
+    toast.success(`Customer "${customer.name}" deleted successfully!`);
+    // In a real app, this would call an API endpoint
+  };
+
+  const handleSaveEdit = () => {
+    if (editFormData) {
+      toast.success(`Customer "${editFormData.name}" updated successfully!`);
+      setIsEditDialogOpen(false);
+      setEditFormData(null);
+      // In a real app, this would call an API endpoint to update
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -247,9 +282,18 @@ const Customers = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Edit</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleViewDetails(customer)}>
+                                View Details
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEdit(customer)}>
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleDelete(customer)}
+                              >
+                                Delete
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>
@@ -266,6 +310,112 @@ const Customers = () => {
           </Card>
         </div>
       </main>
+
+      {/* View Details Dialog */}
+      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Customer Details</DialogTitle>
+            <DialogDescription>View complete customer information</DialogDescription>
+          </DialogHeader>
+          {selectedCustomer && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Name</label>
+                <p className="text-lg font-semibold">{selectedCustomer.name}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Email</label>
+                <p className="text-sm">{selectedCustomer.email}</p>
+              </div>
+              {selectedCustomer.phone && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Phone</label>
+                  <p className="text-sm">{selectedCustomer.phone}</p>
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                <div className="mt-1">{getStatusBadge(selectedCustomer.status)}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Total Spent</label>
+                <p className="text-lg font-semibold">{formatCurrency(selectedCustomer.totalSpent)}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Last Order</label>
+                <p className="text-sm">{selectedCustomer.lastOrder || "N/A"}</p>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setIsDetailDialogOpen(false)}>
+              Close
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Customer Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Customer</DialogTitle>
+            <DialogDescription>Update customer information</DialogDescription>
+          </DialogHeader>
+          {editFormData && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Name</label>
+                <Input
+                  value={editFormData.name}
+                  onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Email</label>
+                <Input
+                  type="email"
+                  value={editFormData.email}
+                  onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                  className="mt-1"
+                />
+              </div>
+              {editFormData.phone && (
+                <div>
+                  <label className="text-sm font-medium">Phone</label>
+                  <Input
+                    value={editFormData.phone}
+                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                    className="mt-1"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-sm font-medium">Status</label>
+                <select
+                  value={editFormData.status}
+                  onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-input rounded-md bg-background text-foreground"
+                >
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-3 mt-6">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEdit}>
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

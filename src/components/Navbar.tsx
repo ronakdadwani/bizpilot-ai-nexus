@@ -9,7 +9,23 @@ const Navbar = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const isDashboard = location.pathname.startsWith("/dashboard") || location.pathname.startsWith("/market-research");
+  const isDashboard = 
+    location.pathname.startsWith("/dashboard") || 
+    location.pathname.startsWith("/market-research") ||
+    location.pathname.startsWith("/analytics") ||
+    location.pathname.startsWith("/forecast") ||
+    location.pathname.startsWith("/upload-data") ||
+    location.pathname.startsWith("/files") ||
+    location.pathname.startsWith("/ai-chat") ||
+    location.pathname.startsWith("/settings") ||
+    location.pathname.startsWith("/reports") ||
+    location.pathname.startsWith("/customers") ||
+    location.pathname.startsWith("/alerts") ||
+    location.pathname.startsWith("/help");
+  
+  // Show "Back to Dashboard" only when NOT on the main dashboard page
+  const isMainDashboard = location.pathname === "/dashboard";
+  const showBackButton = isDashboard && !isMainDashboard;
 
   const navLinks = [
     { name: "Features", href: "/#features" },
@@ -26,7 +42,7 @@ const Navbar = () => {
       <div className={`${isDashboard ? "px-4" : "container mx-auto px-4"}`}>
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={isDashboard ? "/dashboard" : "/"} className="flex items-center gap-2">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/20">
               <Sparkles className="h-5 w-5 text-primary" />
             </div>
@@ -54,11 +70,13 @@ const Navbar = () => {
           <div className="hidden md:flex items-center gap-3">
             {isDashboard ? (
               <>
-                <Link to="/">
-                  <Button variant="ghost" size="sm">
-                    Back to Home
-                  </Button>
-                </Link>
+                {showBackButton && (
+                  <Link to="/dashboard">
+                    <Button variant="ghost" size="sm">
+                      Back to Dashboard
+                    </Button>
+                  </Link>
+                )}
                 {user && (
                   <Button variant="ghost" size="sm" onClick={handleSignOut}>
                     <LogOut className="h-4 w-4 mr-2" />
