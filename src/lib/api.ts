@@ -6,22 +6,24 @@ interface ApiResponse<T = unknown> {
   message?: string;
 }
 
+interface BackendUser {
+  id: string;
+  email: string;
+  full_name: string | null;
+  stage?: string;
+  created_at?: string;
+}
+
 interface LoginResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  access_token: string;
+  token_type: string;
+  user: BackendUser;
 }
 
 interface SignupResponse {
-  token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-  };
+  access_token: string;
+  token_type: string;
+  user: BackendUser;
 }
 
 interface User {
@@ -108,6 +110,14 @@ class ApiClient {
     }
   }
 
+  private mapBackendUser(backendUser: BackendUser): User {
+    return {
+      id: backendUser.id,
+      email: backendUser.email,
+      name: backendUser.full_name || backendUser.email.split('@')[0],
+    };
+  }
+
   async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
     const result = await this.request<LoginResponse>("/login", {
       method: "POST",
@@ -115,8 +125,8 @@ class ApiClient {
     });
 
     if (result.data) {
-      this.setToken(result.data.token);
-      this.setUser(result.data.user);
+      this.setToken(result.data.access_token);
+      this.setUser(this.mapBackendUser(result.data.user));
     }
 
     return result;
@@ -129,8 +139,8 @@ class ApiClient {
     });
 
     if (result.data) {
-      this.setToken(result.data.token);
-      this.setUser(result.data.user);
+      this.setToken(result.data.access_token);
+      this.setUser(this.mapBackendUser(result.data.user));
     }
 
     return result;
